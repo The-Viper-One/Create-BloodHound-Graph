@@ -82,7 +82,7 @@
     <div class="controls">
         <div class="section">
             <button onclick="toggleIdsVisibility()">Toggle IDs Visibility</button>
-			<button onclick="clearCanvas()">Clear Canvas</button>
+            <button onclick="clearCanvas()">Clear Canvas</button>
         </div>
         <div class="section">
             <h3>Add Text Label</h3>
@@ -108,11 +108,11 @@
         </div>
         <div class="section">
             <h3>Edge Operations</h3>
-            <label>From Node:</label>
-            <input type="text" id="fromNodeId">
+            <label>From Node ID:</label>
+            <select id="fromNodeId"></select>
             <br>
-            <label>To Node:</label>
-            <input type="text" id="toNodeId">
+            <label>To Node ID:</label>
+            <select id="toNodeId"></select>
             <br>
             <label>Edge Label:</label>
             <input type="text" id="edgeLabel">
@@ -121,17 +121,18 @@
             <select id="edgeType">
                 <option value="Straight">Straight</option>
                 <option value="Curved">Curved</option>
-				<option value="Bidirectional">Bidirectional</option>
-				<option value="Bidirectional Curved">Bidirectional Curved</option>
+                <option value="Bidirectional">Bidirectional</option>
+                <option value="Bidirectional Curved">Bidirectional Curved</option>
             </select>
             <button onclick="addEdge()">Add Edge</button>
         </div>
-		
-<div id="contextMenu" style="display: none; position: absolute; z-index: 10; background-color: #f9f9f9; border-radius: 5px; box-shadow: 0 2px 12px rgba(0,0,0,0.2);">
-    <ul style="list-style: none; margin: 0; padding: 10px 0;">
-        <li id="deleteItem" style="padding: 8px 16px; cursor: pointer; color: #333;">Delete</li>
-    </ul>
-</div>
+
+        <div id="contextMenu"
+            style="display: none; position: absolute; z-index: 10; background-color: #f9f9f9; border-radius: 5px; box-shadow: 0 2px 12px rgba(0,0,0,0.2);">
+            <ul style="list-style: none; margin: 0; padding: 10px 0;">
+                <li id="deleteItem" style="padding: 8px 16px; cursor: pointer; color: #333;">Delete</li>
+            </ul>
+        </div>
 
 
 
@@ -203,6 +204,7 @@
 
         function addNode() {
             var nodeId = document.getElementById('nodeId').value.toUpperCase();
+
 
             if (!nodeId) {
                 alert("Please enter an ID for the node.");
@@ -285,47 +287,48 @@
             }
 
             nodes.add(nodeOptions);
+            updateNodeSelections();
         }
 
-function addEdge() {
-    var fromNodeId = document.getElementById('fromNodeId').value.toUpperCase();
-    var toNodeId = document.getElementById('toNodeId').value.toUpperCase();
-    var edgeLabel = document.getElementById('edgeLabel').value.trim();
-    var edgeType = document.getElementById('edgeType').value;
-    var edgeId = 'edge-' + fromNodeId + '-' + toNodeId;
+        function addEdge() {
+            var fromNodeId = document.getElementById('fromNodeId').value.toUpperCase();
+            var toNodeId = document.getElementById('toNodeId').value.toUpperCase();
+            var edgeLabel = document.getElementById('edgeLabel').value.trim();
+            var edgeType = document.getElementById('edgeType').value;
+            var edgeId = 'edge-' + fromNodeId + '-' + toNodeId;
 
-    if (!edgeLabel) {
-        alert("Please enter a label for the edge.");
-        return;
-    }
+            if (!edgeLabel) {
+                alert("Please enter a label for the edge.");
+                return;
+            }
 
-    var edgeOptions = {
-        id: edgeId,
-        from: fromNodeId,
-        to: toNodeId,
-        label: edgeLabel,
-        font: {
-            multi: true,
-            vadjust: -10
-        },
-        arrows: {
-            to: { enabled: true, scaleFactor: 1 },
-            from: edgeType.startsWith("Bidirectional") ? { enabled: true, scaleFactor: 1 } : undefined
+            var edgeOptions = {
+                id: edgeId,
+                from: fromNodeId,
+                to: toNodeId,
+                label: edgeLabel,
+                font: {
+                    multi: true,
+                    vadjust: -10
+                },
+                arrows: {
+                    to: { enabled: true, scaleFactor: 1 },
+                    from: edgeType.startsWith("Bidirectional") ? { enabled: true, scaleFactor: 1 } : undefined
+                }
+            };
+
+            if (edgeType === "Curved" || edgeType === "Bidirectional Curved") {
+                edgeOptions.smooth = {
+                    enabled: true,
+                    type: "dynamic",
+                    roundness: 0.5
+                };
+            } else {
+                edgeOptions.smooth = false;
+            }
+
+            edges.add(edgeOptions);
         }
-    };
-
-    if (edgeType === "Curved" || edgeType === "Bidirectional Curved") {
-        edgeOptions.smooth = {
-            enabled: true,
-            type: "dynamic",
-            roundness: 0.5
-        };
-    } else {
-        edgeOptions.smooth = false;
-    }
-
-    edges.add(edgeOptions);
-}
 
 
 
@@ -373,8 +376,8 @@ function addEdge() {
         function deleteNode() {
             var nodeId = document.getElementById('deleteNodeId').value.toUpperCase();
             nodes.remove({ id: nodeId });
+            updateNodeSelections();
         }
-
         function deleteEdge() {
             var fromNodeId = document.getElementById('fromNodeId').value.toUpperCase();
             var toNodeId = document.getElementById('toNodeId').value.toUpperCase();
@@ -387,42 +390,59 @@ function addEdge() {
             }
         }
 
-function showContextMenu(params) {
-    var contextMenu = document.getElementById('contextMenu');
-    var deleteItem = document.getElementById('deleteItem');
+        function updateNodeSelections() {
+            var fromNodeSelect = document.getElementById('fromNodeId');
+            var toNodeSelect = document.getElementById('toNodeId');
 
-    var nodeId = network.getNodeAt(params.pointer.DOM);
-    var edgeId = network.getEdgeAt(params.pointer.DOM);
+            // Clear existing options
+            fromNodeSelect.innerHTML = '';
+            toNodeSelect.innerHTML = '';
 
-    var posX = params.event.pageX;
-    var posY = params.event.pageY;
-
-    contextMenu.style.top = posY + "px";
-    contextMenu.style.left = posX + "px";
-    contextMenu.style.display = 'block';
-
-    deleteItem.onclick = function() {
-        if (nodeId) {
-            nodes.remove({id: nodeId});
-        } else if (edgeId) {
-            edges.remove({id: edgeId});
+            // Populate the selects with current node IDs
+            nodes.forEach(function (node) {
+                var option1 = new Option(node.id, node.id);
+                var option2 = new Option(node.id, node.id);
+                fromNodeSelect.add(option1);
+                toNodeSelect.add(option2);
+            });
         }
-        contextMenu.style.display = 'none';
-    };
 
-    params.event.preventDefault();
-}
+        function showContextMenu(params) {
+            var contextMenu = document.getElementById('contextMenu');
+            var deleteItem = document.getElementById('deleteItem');
 
-document.addEventListener('click', function() {
-    document.getElementById('contextMenu').style.display = 'none';
-});
+            var nodeId = network.getNodeAt(params.pointer.DOM);
+            var edgeId = network.getEdgeAt(params.pointer.DOM);
 
-network.on("oncontext", showContextMenu);
+            var posX = params.event.pageX;
+            var posY = params.event.pageY;
 
-function clearCanvas() {
-    nodes.clear();
-    edges.clear();
-}
+            contextMenu.style.top = posY + "px";
+            contextMenu.style.left = posX + "px";
+            contextMenu.style.display = 'block';
+
+            deleteItem.onclick = function () {
+                if (nodeId) {
+                    nodes.remove({ id: nodeId });
+                } else if (edgeId) {
+                    edges.remove({ id: edgeId });
+                }
+                contextMenu.style.display = 'none';
+            };
+
+            params.event.preventDefault();
+        }
+
+        document.addEventListener('click', function () {
+            document.getElementById('contextMenu').style.display = 'none';
+        });
+
+        network.on("oncontext", showContextMenu);
+
+        function clearCanvas() {
+            nodes.clear();
+            edges.clear();
+        }
 
     </script>
 </body>
