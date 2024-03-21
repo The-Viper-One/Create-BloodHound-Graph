@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>User Nodes Visualization</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style type="text/css">
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 0px;
+        }
+
+        #mynetwork {
+            width: 1200px;
+            height: 925px;
+            border: 2px solid black;
+            box-shadow: 4px 4px 10px #F2F5F9;
+            background-color: #F2F5F9;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            margin-right: 20px;
+        }
+
+        .section {
+            margin-top: 0;
+            margin-bottom: 5px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .section h3 {
+            margin-top: 0;
+        }
+
+        .section> :first-child {
+            margin-top: 0;
+        }
+
+        .controls .section:first-child {
+            margin-top: 10px;
+        }
+
+        label {
+            display: block;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        select,
+        button {
+            width: 200px;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="controls">
+        <div class="section">
+            <button onclick="toggleIdsVisibility()">Toggle IDs Visibility</button>
+        </div>
+        <div class="section">
+            <h3>Add Text Label</h3>
+            <label>Text:</label>
+            <input type="text" id="textLabel">
+            <button onclick="addTextLabel()">Add Text Label</button>
+        </div>
+        <div class="section">
+            <h3>Node Operations</h3>
+            <label>Node ID:</label>
+            <input type="text" id="nodeId">
+            <label>Node Color:</label>
+            <select id="nodeColor">
+                <option value="User">User</option>
+                <option value="Computer">Computer</option>
+                <option value="Group">Group</option>
+                <option value="Container">Container</option>
+                <option value="OU">OU</option>
+                <option value="GPO">GPO</option>
+                <option value="Domain">Domain</option>
+            </select>
+            <button onclick="addNode()">Add Node</button>
+            <label>Delete Node ID:</label>
+            <input type="text" id="deleteNodeId">
+            <button onclick="deleteNode()">Delete Node</button>
+        </div>
+        <div class="section">
+            <h3>Edge Operations</h3>
+            <label>From Node ID:</label>
+            <input type="text" id="fromNodeId">
+            <br>
+            <label>To Node ID:</label>
+            <input type="text" id="toNodeId">
+            <br>
+            <label>Edge Label:</label>
+            <input type="text" id="edgeLabel">
+            <br>
+            <label>Edge Type:</label>
+            <select id="edgeType">
+                <option value="straight">Straight</option>
+                <option value="curved">Curved</option>
+            </select>
+            <br>
+            <button onclick="addEdge()">Add Edge</button>
+            <br>
+            <label>Delete Edge ID:</label>
+            <input type="text" id="deleteEdgeId">
+            <button onclick="deleteEdge()">Delete Edge</button>
+        </div>
+
+    </div>
+
+    <div id="mynetwork"></div>
+
+    <script type="text/javascript">
+        var nodes = new vis.DataSet([]);
+        var edges = new vis.DataSet([]);
+        var areIdsVisible = true;
+
+        var container = document.getElementById('mynetwork');
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
+
+        var options = {
+            nodes: {
+                shape: 'circle',
+                size: 20,
+                font: {
+                    size: 12,
+                    align: 'center'
+                },
+                color: {
+                    border: 'black',
+                    background: 'black'
+                },
+                borderWidth: 3
+            },
+            edges: {
+                width: 4,
+                color: {
+                    color: 'grey',
+                    highlight: 'black',
+                    hover: 'black',
+                    inherit: 'from',
+                    opacity: 1.0
+                },
+                font: {
+                    align: 'top'
+                },
+                smooth: false,
+                length: 300
+            },
+            physics: {
+                enabled: false,
+                barnesHut: {
+                    gravitationalConstant: -2000,
+                    centralGravity: 0.3,
+                    springLength: 95
+                },
+                stabilization: {
+                    enabled: true,
+                    iterations: 1000,
+                    fit: true
+                }
+            },
+            interaction: {
+                dragNodes: true,
+                dragView: true,
+                zoomView: true
+            }
+        };
+
+        var network = new vis.Network(container, data, options);
+
+        function addNode() {
+            var nodeId = document.getElementById('nodeId').value.toUpperCase();
+
+            if (!nodeId) {
+                alert("Please enter an ID for the node.");
+                return;
+            }
+
+            var nodeType = document.getElementById('nodeColor').value;
+
+            // Image URLs
+            var UserImageUrl = 'https://raw.githubusercontent.com/The-Viper-One/BH-Graph/main/User.png';
+            var ComputerImageUrl = 'https://raw.githubusercontent.com/The-Viper-One/BH-Graph/main/Computer.png';
+            var GroupImageUrl = 'https://raw.githubusercontent.com/The-Viper-One/BH-Graph/main/Group.png';
+            var OUImageUrl = 'https://raw.githubusercontent.com/The-Viper-One/BH-Graph/main/OU.png';
+            var ContainerImageUrl = 'https://raw.githubusercontent.com/The-Viper-One/BH-Graph/main/container.png';
+            var DomainImageUrl = 'https://raw.githubusercontent.com/The-Viper-One/BH-Graph/main/domain.png';
+            var GPOImageUrl = 'https://raw.githubusercontent.com/The-Viper-One/BH-Graph/main/Policy.png';
+
+            var nodeOptions = {
+                id: nodeId,
+                label: nodeId,
+                borderWidth: 1
+            };
+
+            if (nodeType === 'User') {
+                Object.assign(nodeOptions, {
+                    shape: 'image',
+                    image: UserImageUrl,
+                    size: 40
+                });
+            } else if (nodeType === 'Computer') {
+                Object.assign(nodeOptions, {
+                    shape: 'image',
+                    image: ComputerImageUrl,
+                    size: 40
+                });
+            } else if (nodeType === 'Group') {
+                Object.assign(nodeOptions, {
+                    shape: 'image',
+                    image: GroupImageUrl,
+                    size: 40
+                });
+            } else if (nodeType === 'OU') {
+                Object.assign(nodeOptions, {
+                    shape: 'image',
+                    image: OUImageUrl,
+                    size: 40
+                });
+            } else if (nodeType === 'Container') {
+                Object.assign(nodeOptions, {
+                    shape: 'image',
+                    image: ContainerImageUrl,
+                    size: 40
+                });
+
+            } else if (nodeType === 'GPO') {
+                Object.assign(nodeOptions, {
+                    shape: 'image',
+                    image: GPOImageUrl,
+                    size: 40
+                });
+            } else if (nodeType === 'Domain') {
+                Object.assign(nodeOptions, {
+                    shape: 'image',
+                    image: DomainImageUrl,
+                    size: 40
+                });
+            } else {
+                Object.assign(nodeOptions, {
+                    shape: 'circle',
+                    color: {
+                        border: 'black',
+                        background: nodeType
+                    },
+                    font: {
+                        multi: true,
+                        vadjust: 15,
+                        color: 'black'
+                    },
+                });
+            }
+
+            nodes.add(nodeOptions);
+        }
+
+        function addEdge() {
+            var fromNodeId = document.getElementById('fromNodeId').value.toUpperCase();
+            var toNodeId = document.getElementById('toNodeId').value.toUpperCase();
+            var edgeLabel = document.getElementById('edgeLabel').value.trim();
+
+            if (!edgeLabel) {
+                alert("Please enter a label for the edge.");
+                return;
+            }
+
+            var edgeType = document.getElementById('edgeType').value;
+            var edgeId = 'edge-' + fromNodeId + '-' + toNodeId;
+
+            var edgeOptions = {
+                id: edgeId,
+                from: fromNodeId,
+                to: toNodeId,
+                label: edgeLabel,
+                font: {
+                    multi: true,
+                    vadjust: -10
+                },
+                arrows: 'to'
+            };
+
+            if (edgeType === 'straight') {
+                edgeOptions.smooth = false;
+            } else if (edgeType === 'curved') {
+                edgeOptions.smooth = { enabled: true, type: 'curvedCCW', forceDirection: 'none', roundness: 0.2 };
+            }
+
+            edges.add(edgeOptions);
+        }
+
+
+
+        function toggleIdsVisibility() {
+            areIdsVisible = !areIdsVisible;
+
+            nodes.forEach(function (node) {
+                if (!node.isLabelNode) {
+                    nodes.update({ id: node.id, label: areIdsVisible ? 'ID: ' + node.id : '' });
+                }
+            });
+
+            edges.forEach(function (edge) {
+                if (areIdsVisible) {
+                    edges.update({ id: edge.id, label: edge.fullLabel });
+                } else {
+                    var labelParts = edge.fullLabel.split('\n');
+                    var actualLabel = labelParts[0];
+                    edges.update({ id: edge.id, label: actualLabel });
+                }
+            });
+        }
+
+
+
+        function addTextLabel() {
+            var text = document.getElementById('textLabel').value;
+            if (text) {
+                var textLabelId = 'text-label-' + (new Date().getTime());
+                nodes.add({
+                    id: textLabelId,
+                    label: text,
+                    shape: 'text',
+                    color: { background: 'none', border: 'none' },
+                    physics: false,
+                    fixed: { x: false, y: false },
+                    chosen: false,
+                    font: { size: 12, face: 'arial', color: '#343434' },
+                    isLabelNode: true
+                });
+            }
+        }
+
+        function deleteNode() {
+            var nodeId = document.getElementById('deleteNodeId').value.toUpperCase();
+            nodes.remove({ id: nodeId });
+        }
+
+        function deleteEdge() {
+            var fromNodeId = document.getElementById('fromNodeId').value.toUpperCase();
+            var toNodeId = document.getElementById('toNodeId').value.toUpperCase();
+            var edgeId = 'edge-' + fromNodeId + '-' + toNodeId;
+
+            var deleted = edges.remove({ id: edgeId });
+            if (deleted.length === 0) {
+                edgeId = document.getElementById('deleteEdgeId').value.toUpperCase();
+                edges.remove({ id: edgeId });
+            }
+        }
+
+
+
+    </script>
+</body>
+
+</html>
