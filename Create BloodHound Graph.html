@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>User Nodes Visualization</title>
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
@@ -15,7 +14,7 @@
 
         #mynetwork {
             width: 1430px;
-            height: 730px;
+            height: 800px;
             border: 2px solid black;
             box-shadow: 4px 4px 10px #F2F5F9;
             background-color: #F2F5F9;
@@ -35,11 +34,17 @@
             border-radius: 4px;
         }
 
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
         .section h3 {
             margin-top: 0;
         }
 
-        .section> :first-child {
+        .section > :first-child {
             margin-top: 0;
         }
 
@@ -76,70 +81,76 @@
         }
     </style>
 </head>
-
 <body>
 
-    <div class="controls">
-        <div class="section">
+<div class="controls">
+    <div class="section">
+        <div class="button-row">
             <button onclick="toggleIdsVisibility()">Toggle IDs Visibility</button>
             <button onclick="clearCanvas()">Clear Canvas</button>
         </div>
-        <div class="section">
-            <h3>Add Text Label</h3>
-            <label>Text:</label>
-            <input type="text" id="textLabel">
-            <button onclick="addTextLabel()">Add Text Label</button>
+        <div class="button-row">
+            <button onclick="document.getElementById('fileInput').click();">Load Graph</button>
+            <button onclick="saveGraph()">Save Graph</button>
+            <input type="file" id="fileInput" style="display:none;" onchange="loadGraphFromFile(this)" />
         </div>
-        <div class="section">
-            <h3>Node Operations</h3>
-            <label>Node Label:</label>
-            <input type="text" id="nodeId">
-            <label>Node Type:</label>
-            <select id="nodeColor">
-                <option value="User">User</option>
-                <option value="Computer">Computer</option>
-                <option value="Group">Group</option>
-                <option value="Container">Container</option>
-                <option value="OU">OU</option>
-                <option value="GPO">GPO</option>
-                <option value="Domain">Domain</option>
-            </select>
-            <button onclick="addNode()">Add Node</button>
-        </div>
-        <div class="section">
-            <h3>Edge Operations</h3>
-            <label>From Node ID:</label>
-            <select id="fromNodeId"></select>
-            <br>
-            <label>To Node ID:</label>
-            <select id="toNodeId"></select>
-            <br>
-            <label>Edge Label:</label>
-            <input type="text" id="edgeLabel">
-            <br>
-            <label>Edge Type:</label>
-            <select id="edgeType">
-                <option value="Straight">Straight</option>
-                <option value="Curved">Curved</option>
-                <option value="Bidirectional">Bidirectional</option>
-                <option value="Bidirectional Curved">Bidirectional Curved</option>
-            </select>
-            <button onclick="addEdge()">Add Edge</button>
-        </div>
-
-        <div id="contextMenu"
-            style="display: none; position: absolute; z-index: 10; background-color: #f9f9f9; border-radius: 5px; box-shadow: 0 2px 12px rgba(0,0,0,0.2);">
-            <ul style="list-style: none; margin: 0; padding: 10px 0;">
-                <li id="deleteItem" style="padding: 8px 16px; cursor: pointer; color: #333;">Delete</li>
-            </ul>
-        </div>
-
-
-
     </div>
 
-    <div id="mynetwork"></div>
 
+    <div class="section">
+        <h3>Add Text Label</h3>
+        <label>Text:</label>
+        <input type="text" id="textLabel">
+        <button onclick="addTextLabel()">Add Text Label</button>
+    </div>
+    <div class="section">
+        <h3>Node Operations</h3>
+        <label>Node Label:</label>
+        <input type="text" id="nodeId">
+        <label>Node Type:</label>
+        <select id="nodeColor">
+            <option value="User">User</option>
+            <option value="Computer">Computer</option>
+            <option value="Group">Group</option>
+            <option value="Container">Container</option>
+            <option value="OU">OU</option>
+            <option value="GPO">GPO</option>
+            <option value="Domain">Domain</option>
+        </select>
+        <button onclick="addNode()">Add Node</button>
+    </div>
+    <div class="section">
+        <h3>Edge Operations</h3>
+        <label>From Node ID:</label>
+        <select id="fromNodeId"></select>
+        <br>
+        <label>To Node ID:</label>
+        <select id="toNodeId"></select>
+        <br>
+        <label>Edge Label:</label>
+        <input type="text" id="edgeLabel">
+        <br>
+        <label>Edge Type:</label>
+        <select id="edgeType">
+            <option value="Straight">Straight</option>
+            <option value="Curved">Curved</option>
+            <option value="Bidirectional">Bidirectional</option>
+            <option value="Bidirectional Curved">Bidirectional Curved</option>
+        </select>
+        <button onclick="addEdge()">Add Edge</button>
+    </div>
+
+    <div
+
+<div id="contextMenu" style="display: none; position: absolute; z-index: 10; background-color: #f9f9f9; border-radius: 5px; box-shadow: 0 2px 12px rgba(0,0,0,0.2);">
+    <ul style="list-style: none; margin: 0; padding: 10px 0;">
+        <li id="deleteItem" style="padding: 8px 16px; cursor: pointer; color: #333;">Delete</li>
+    </ul>
+</div>
+
+</div> 
+
+<div id="mynetwork"></div>
     <script type="text/javascript">
         var nodes = new vis.DataSet([]);
         var edges = new vis.DataSet([]);
@@ -394,11 +405,9 @@
             var fromNodeSelect = document.getElementById('fromNodeId');
             var toNodeSelect = document.getElementById('toNodeId');
 
-            // Clear existing options
             fromNodeSelect.innerHTML = '';
             toNodeSelect.innerHTML = '';
 
-            // Populate the selects with current node IDs
             nodes.forEach(function (node) {
                 var option1 = new Option(node.id, node.id);
                 var option2 = new Option(node.id, node.id);
@@ -439,10 +448,79 @@
 
         network.on("oncontext", showContextMenu);
 
-        function clearCanvas() {
-            nodes.clear();
-            edges.clear();
-        }
+function clearCanvas() {
+    var confirmation = confirm("Are you sure you want to clear the canvas? This action cannot be undone.");
+    if (confirmation) {
+        nodes.clear();
+        edges.clear();
+    }
+
+}
+
+
+function saveGraph() {
+    var data = {
+        nodes: nodes.get(),
+        edges: edges.get()
+    };
+    var dataStr = JSON.stringify(data, null, 2); 
+    download(dataStr, "graph.json", "text/plain");
+}
+
+function download(content, fileName, contentType) {
+    var a = document.createElement("a");
+    var file = new Blob([content], {type: contentType});
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function loadGraphFromFile(input) {
+    var file = input.files[0];
+    var reader = new FileReader();
+    
+    reader.onload = function(e) {
+        var data = JSON.parse(e.target.result);
+        nodes.clear();
+        edges.clear();
+        nodes.add(data.nodes); 
+        edges.add(data.edges);
+    };
+    
+    reader.readAsText(file);
+}
+
+
+function saveGraph() {
+    var savedNodes = nodes.get().map(node => {
+        var position = network.getPositions([node.id])[node.id];
+        return { ...node, x: position.x, y: position.y };
+    });
+    var data = {
+        nodes: savedNodes,
+        edges: edges.get()
+    };
+    var dataStr = JSON.stringify(data, null, 2); 
+    download(dataStr, "graph.json", "text/plain");
+}
+
+function download(content, fileName, contentType) {
+    var a = document.createElement("a");
+    var file = new Blob([content], {type: contentType});
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(a.href);
+    }, 0);
+}
+
+
+
 
     </script>
 </body>
