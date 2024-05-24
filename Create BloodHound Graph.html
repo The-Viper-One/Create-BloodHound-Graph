@@ -14,7 +14,7 @@
 
         #mynetwork {
             width: 1430px;
-            height: 800px;
+            height: 870px;
             border: 2px solid black;
             box-shadow: 4px 4px 10px #F2F5F9;
             background-color: #F2F5F9;
@@ -136,18 +136,25 @@
             <option value="Curved">Curved</option>
             <option value="Bidirectional">Bidirectional</option>
             <option value="Bidirectional Curved">Bidirectional Curved</option>
+            <option value="Red Bar">Red Bar</option>
+        </select>
+        <br>
+        <label>Edge Color:</label>
+        <select id="edgeColor">
+            <option value="grey" selected>Grey</option>
+            <option value="black">Black</option>
+            <option value="red">Red</option>
+            <option value="blue">Blue</option>
+            <option value="green">Green</option>
         </select>
         <button onclick="addEdge()">Add Edge</button>
     </div>
 
-    <div
-
-<div id="contextMenu" style="display: none; position: absolute; z-index: 10; background-color: #f9f9f9; border-radius: 5px; box-shadow: 0 2px 12px rgba(0,0,0,0.2);">
-    <ul style="list-style: none; margin: 0; padding: 10px 0;">
-        <li id="deleteItem" style="padding: 8px 16px; cursor: pointer; color: #333;">Delete</li>
-    </ul>
-</div>
-
+    <div id="contextMenu" style="display: none; position: absolute; z-index: 10; background-color: #f9f9f9; border-radius: 5px; box-shadow: 0 2px 12px rgba(0,0,0,0.2);">
+        <ul style="list-style: none; margin: 0; padding: 10px 0;">
+            <li id="deleteItem" style="padding: 8px 16px; cursor: pointer; color: #333;">Delete</li>
+        </ul>
+    </div>
 </div> 
 
 <div id="mynetwork"></div>
@@ -215,7 +222,6 @@
 
         function addNode() {
             var nodeId = document.getElementById('nodeId').value.toUpperCase();
-
 
             if (!nodeId) {
                 alert("Please enter an ID for the node.");
@@ -306,6 +312,7 @@
             var toNodeId = document.getElementById('toNodeId').value.toUpperCase();
             var edgeLabel = document.getElementById('edgeLabel').value.trim();
             var edgeType = document.getElementById('edgeType').value;
+            var edgeColor = document.getElementById('edgeColor').value;
             var edgeId = 'edge-' + fromNodeId + '-' + toNodeId;
 
             if (!edgeLabel) {
@@ -318,6 +325,7 @@
                 from: fromNodeId,
                 to: toNodeId,
                 label: edgeLabel,
+                color: { color: edgeColor }, 
                 font: {
                     multi: true,
                     vadjust: -10
@@ -328,21 +336,28 @@
                 }
             };
 
-            if (edgeType === "Curved" || edgeType === "Bidirectional Curved") {
-                edgeOptions.smooth = {
-                    enabled: true,
-                    type: "dynamic",
-                    roundness: 0.5
-                };
-            } else {
-                edgeOptions.smooth = false;
+            switch (edgeType) {
+                case "Curved":
+                case "Bidirectional Curved":
+                    edgeOptions.smooth = {
+                        enabled: true,
+                        type: "dynamic",
+                        roundness: 0.5
+                    };
+                    break;
+                case "Red Bar":
+                    edgeOptions.arrows = {
+                        to: { enabled: true, type: 'bar', scaleFactor: 1 }
+                    };
+                    edgeOptions.color = { color: 'red' };
+                    break;
+                default:
+                    edgeOptions.smooth = false;
+                    break;
             }
 
             edges.add(edgeOptions);
         }
-
-
-
 
         function toggleIdsVisibility() {
             areIdsVisible = !areIdsVisible;
@@ -363,8 +378,6 @@
                 }
             });
         }
-
-
 
         function addTextLabel() {
             var text = document.getElementById('textLabel').value;
@@ -389,6 +402,7 @@
             nodes.remove({ id: nodeId });
             updateNodeSelections();
         }
+
         function deleteEdge() {
             var fromNodeId = document.getElementById('fromNodeId').value.toUpperCase();
             var toNodeId = document.getElementById('toNodeId').value.toUpperCase();
@@ -448,81 +462,73 @@
 
         network.on("oncontext", showContextMenu);
 
-function clearCanvas() {
-    var confirmation = confirm("Are you sure you want to clear the canvas? This action cannot be undone.");
-    if (confirmation) {
-        nodes.clear();
-        edges.clear();
-    }
+        function clearCanvas() {
+            var confirmation = confirm("Are you sure you want to clear the canvas? This action cannot be undone.");
+            if (confirmation) {
+                nodes.clear();
+                edges.clear();
+            }
+        }
 
-}
+        function saveGraph() {
+            var data = {
+                nodes: nodes.get(),
+                edges: edges.get()
+            };
+            var dataStr = JSON.stringify(data, null, 2); 
+            download(dataStr, "graph.json", "text/plain");
+        }
 
+        function download(content, fileName, contentType) {
+            var a = document.createElement("a");
+            var file = new Blob([content], {type: contentType});
+            a.href = URL.createObjectURL(file);
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
 
-function saveGraph() {
-    var data = {
-        nodes: nodes.get(),
-        edges: edges.get()
-    };
-    var dataStr = JSON.stringify(data, null, 2); 
-    download(dataStr, "graph.json", "text/plain");
-}
+        function loadGraphFromFile(input) {
+            var file = input.files[0];
+            var reader = new FileReader();
+            
+            reader.onload = function(e) {
+                var data = JSON.parse(e.target.result);
+                nodes.clear();
+                edges.clear();
+                nodes.add(data.nodes); 
+                edges.add(data.edges);
+            };
+            
+            reader.readAsText(file);
+        }
 
-function download(content, fileName, contentType) {
-    var a = document.createElement("a");
-    var file = new Blob([content], {type: contentType});
-    a.href = URL.createObjectURL(file);
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-}
+        function saveGraph() {
+            var savedNodes = nodes.get().map(node => {
+                var position = network.getPositions([node.id])[node.id];
+                return { ...node, x: position.x, y: position.y };
+            });
+            var data = {
+                nodes: savedNodes,
+                edges: edges.get()
+            };
+            var dataStr = JSON.stringify(data, null, 2); 
+            download(dataStr, "graph.json", "text/plain");
+        }
 
-function loadGraphFromFile(input) {
-    var file = input.files[0];
-    var reader = new FileReader();
-    
-    reader.onload = function(e) {
-        var data = JSON.parse(e.target.result);
-        nodes.clear();
-        edges.clear();
-        nodes.add(data.nodes); 
-        edges.add(data.edges);
-    };
-    
-    reader.readAsText(file);
-}
-
-
-function saveGraph() {
-    var savedNodes = nodes.get().map(node => {
-        var position = network.getPositions([node.id])[node.id];
-        return { ...node, x: position.x, y: position.y };
-    });
-    var data = {
-        nodes: savedNodes,
-        edges: edges.get()
-    };
-    var dataStr = JSON.stringify(data, null, 2); 
-    download(dataStr, "graph.json", "text/plain");
-}
-
-function download(content, fileName, contentType) {
-    var a = document.createElement("a");
-    var file = new Blob([content], {type: contentType});
-    a.href = URL.createObjectURL(file);
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function() {
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(a.href);
-    }, 0);
-}
-
-
-
-
+        function download(content, fileName, contentType) {
+            var a = document.createElement("a");
+            var file = new Blob([content], {type: contentType});
+            a.href = URL.createObjectURL(file);
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function() {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(a.href);
+            }, 0);
+        }
     </script>
 </body>
-
 </html>
